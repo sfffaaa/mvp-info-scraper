@@ -89,3 +89,38 @@ def test_fetch_reddit_articles_returns_empty_on_error(monkeypatch):
     monkeypatch.setattr("sources.reddit.feedparser.parse", MagicMock(side_effect=Exception("timeout")))
     articles = fetch_reddit_articles("sub", topic_hint="ai-agent", limit=5)
     assert articles == []
+
+
+import pytest
+from sources.twitter import fetch_twitter_articles
+
+
+@pytest.mark.asyncio
+async def test_fetch_twitter_articles_returns_articles(monkeypatch):
+    mock_tweet = MagicMock()
+    mock_tweet.id = 123456789
+    mock_tweet.rawContent = "This is a tweet about AI agents and autonomous systems"
+
+    async def mock_search(*args, **kwargs):
+        yield mock_tweet
+
+    mock_api = MagicMock()
+    mock_api.search = mock_search
+
+    articles = await fetch_twitter_articles("AI agent", topic_hint="ai-agent", api=mock_api, limit=5)
+    assert len(articles) == 1
+    assert articles[0].source == "twitter"
+    assert "123456789" in articles[0].url
+
+
+@pytest.mark.asyncio
+async def test_fetch_twitter_articles_returns_empty_on_error(monkeypatch):
+    async def mock_search_fail(*args, **kwargs):
+        raise Exception("rate limited")
+        yield  # make it an async generator
+
+    mock_api = MagicMock()
+    mock_api.search = mock_search_fail
+
+    articles = await fetch_twitter_articles("query", topic_hint="ai-agent", api=mock_api, limit=5)
+    assert articles == []
