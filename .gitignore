@@ -1,0 +1,8 @@
+.env
+__pycache__/
+*.pyc
+venv/
+buffer/
+logs/
+seen_urls.txt
+*.db

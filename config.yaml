@@ -1,0 +1,65 @@
+# Info-Scraper Configuration
+
+# Topics to monitor
+topics:
+  - ai-agent
+  - ai-product
+  - ai-tools
+  - crypto
+  - knowledge-management
+  - indie-business
+  - web3-protocol
+  - society
+  - prediction-markets
+  - business-insight
+  - defense-ai
+
+# Schedule settings
+schedule:
+  scrape_interval_hours: 6
+  classify_interval_hours: 12
+  synthesis_interval_hours: 24
+
+# Email configuration
+email:
+  to: sfffaaa@gmail.com
+  from: jay.monitor.tool@gmail.com
+  smtp_host: smtp.gmail.com
+  smtp_port: 587
+  use_tls: true
+
+# Scraper settings
+scraper:
+  twitter:
+    max_tweets_per_topic: 50
+    tweet_languages: [en]
+    exclude_retweets: true
+    exclude_replies: false
+  
+  rss:
+    feeds:
+      - name: HackerNews
+        url: https://news.ycombinator.com/rss
+      - name: TechCrunch
+        url: https://techcrunch.com/feed/
+      - name: LessWrong
+        url: https://www.lesswrong.com/feed.xml
+    max_items_per_feed: 30
+
+# Paths
+paths:
+  base_dir: ~/explorer/mvp-info-scraper
+  raw_posts_dir: ~/info/interested-raw-posts
+  buffer_dir: ~/explorer/mvp-info-scraper/buffer
+  synthesis_dir: ~/info/interested-raw-posts/synthesis
+  logs_dir: ~/explorer/mvp-info-scraper/logs
+  seen_urls_file: ~/explorer/mvp-info-scraper/seen_urls.txt
+
+# Logging
+logging:
+  level: INFO
+  scraper_log: ~/explorer/mvp-info-scraper/logs/scraper.log
+  classifier_log: ~/explorer/mvp-info-scraper/logs/classifier.log
+  synthesizer_log: ~/explorer/mvp-info-scraper/logs/synthesizer.log
+  max_log_size_mb: 10
+  backup_count: 5
