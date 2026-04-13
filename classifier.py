@@ -72,9 +72,15 @@ def score_articles_with_claude(
     if not articles:
         return []
 
+    # Pre-filter: keep only articles with meaningful content, cap at 25
+    candidates = [a for a in articles if len(a.content) > 80]
+    if not candidates:
+        candidates = articles
+    candidates = candidates[:25]
+
     article_list = "\n".join(
-        f"[{i}] URL: {a.url}\nTitle: {a.title}\nContent (truncated): {a.content[:500]}"
-        for i, a in enumerate(articles)
+        f"[{i}] URL: {a.url}\nTitle: {a.title}\nContent (truncated): {a.content[:300]}"
+        for i, a in enumerate(candidates)
     )
 
     prompt = f"""You are curating articles for a reader interested in: {topic}
@@ -96,14 +102,14 @@ Return ONLY a JSON array, no extra text:
   {{"index": 0, "score": 8.5, "summary": "2-3 sentence summary of key insight"}},
   ...
 ]
-Include all {len(articles)} articles. Use index matching the [N] above."""
+Include all {len(candidates)} articles. Use index matching the [N] above."""
 
     try:
         result = subprocess.run(
             ["claude", "-p", prompt],
             capture_output=True,
             text=True,
-            timeout=120,
+            timeout=300,
         )
         text = result.stdout.strip()
         if text.startswith("```"):
@@ -112,14 +118,14 @@ Include all {len(articles)} articles. Use index matching the [N] above."""
         scored = json.loads(text)
         for item in scored:
             idx = item["index"]
-            if 0 <= idx < len(articles):
-                articles[idx].score = item["score"]
-                articles[idx].summary = item["summary"]
-        articles.sort(key=lambda a: a.score or 0, reverse=True)
-        return articles[:top_n]
+            if 0 <= idx < len(candidates):
+                candidates[idx].score = item["score"]
+                candidates[idx].summary = item["summary"]
+        candidates.sort(key=lambda a: a.score or 0, reverse=True)
+        return candidates[:top_n]
     except Exception as e:
         print(f"[classifier] Claude scoring failed for {topic}: {e}", file=sys.stderr)
-        return articles[:top_n]
+        return candidates[:top_n]
 
 
 def save_article(article: Article, output_dir: Path) -> None:

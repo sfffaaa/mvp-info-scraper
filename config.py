@@ -16,6 +16,8 @@ class Settings:
     config: dict
     twitter_username: str
     twitter_password: str
+    twitter_email: str
+    twitter_email_password: str
     gmail_address: str
     gmail_app_password: str
 
@@ -28,6 +30,8 @@ class Settings:
             config=config,
             twitter_username=os.environ["TWITTER_USERNAME"],
             twitter_password=os.environ["TWITTER_PASSWORD"],
+            twitter_email=os.environ.get("TWITTER_EMAIL", ""),
+            twitter_email_password=os.environ.get("TWITTER_EMAIL_PASSWORD", ""),
             gmail_address=os.environ["GMAIL_ADDRESS"],
             gmail_app_password=os.environ["GMAIL_APP_PASSWORD"],
         )
