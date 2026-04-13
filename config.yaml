@@ -1,65 +1,67 @@
-# Info-Scraper Configuration
-
-# Topics to monitor
 topics:
-  - ai-agent
-  - ai-product
-  - ai-tools
-  - crypto
-  - knowledge-management
-  - indie-business
-  - web3-protocol
-  - society
-  - prediction-markets
-  - business-insight
-  - defense-ai
+  ai-agent:
+    keywords: ["AI agent", "autonomous agent", "multi-agent system"]
+    reddit: ["MachineLearning", "artificial"]
+    medium_tags: ["ai-agents"]
+  ai-product:
+    keywords: ["AI product", "AI startup", "AI SaaS"]
+    reddit: ["artificial", "MachineLearning"]
+    medium_tags: ["artificial-intelligence"]
+  ai-tools:
+    keywords: ["Claude Code", "Cursor AI", "AI coding tools"]
+    reddit: ["ClaudeAI", "ChatGPT"]
+    medium_tags: ["developer-tools"]
+  crypto:
+    keywords: ["DeFi protocol", "blockchain", "on-chain analytics"]
+    reddit: ["DeFi", "ethereum"]
+    medium_tags: ["blockchain"]
+  knowledge-management:
+    keywords: ["PKM system", "Obsidian", "knowledge graph second brain"]
+    reddit: ["PKMS", "Zettelkasten"]
+    medium_tags: ["knowledge-management"]
+  indie-business:
+    keywords: ["indie hacker", "solopreneur bootstrapped", "one person company"]
+    reddit: ["indiehackers", "EntrepreneurRideAlong"]
+    medium_tags: ["indie-hacking"]
+  web3-protocol:
+    keywords: ["ERC proposal", "EIP standard", "smart contract protocol"]
+    reddit: ["ethereum", "ethdev"]
+    medium_tags: ["ethereum"]
+  society:
+    keywords: ["AI society impact", "future of work AI", "AI policy regulation"]
+    reddit: ["Futurology", "technology"]
+    medium_tags: ["society"]
+  prediction-markets:
+    keywords: ["Polymarket prediction", "forecasting market", "Manifold markets"]
+    reddit: ["polymarket", "slatestarcodex"]
+    medium_tags: ["prediction-markets"]
+  business-insight:
+    keywords: ["startup strategy insight", "market analysis venture", "business model"]
+    reddit: ["startups", "business"]
+    medium_tags: ["business"]
+  defense-ai:
+    keywords: ["defense AI military", "autonomous weapons", "defense tech AI"]
+    reddit: ["geopolitics", "CredibleDefense"]
+    medium_tags: ["defense"]
 
-# Schedule settings
 schedule:
-  scrape_interval_hours: 6
-  classify_interval_hours: 12
-  synthesis_interval_hours: 24
+  scrape_times: ["07:00", "19:00"]
+  classify_time: "21:00"
+  synthesize_every_days: 2
+  synthesize_time: "09:00"
 
-# Email configuration
 email:
   to: sfffaaa@gmail.com
   from: jay.monitor.tool@gmail.com
   smtp_host: smtp.gmail.com
   smtp_port: 587
-  use_tls: true
 
-# Scraper settings
 scraper:
-  twitter:
-    max_tweets_per_topic: 50
-    tweet_languages: [en]
-    exclude_retweets: true
-    exclude_replies: false
-  
-  rss:
-    feeds:
-      - name: HackerNews
-        url: https://news.ycombinator.com/rss
-      - name: TechCrunch
-        url: https://techcrunch.com/feed/
-      - name: LessWrong
-        url: https://www.lesswrong.com/feed.xml
-    max_items_per_feed: 30
+  posts_per_topic_per_run: 15
+  save_top_per_topic: 5
 
-# Paths
 paths:
-  base_dir: ~/explorer/mvp-info-scraper
-  raw_posts_dir: ~/info/interested-raw-posts
-  buffer_dir: ~/explorer/mvp-info-scraper/buffer
-  synthesis_dir: ~/info/interested-raw-posts/synthesis
-  logs_dir: ~/explorer/mvp-info-scraper/logs
-  seen_urls_file: ~/explorer/mvp-info-scraper/seen_urls.txt
-
-# Logging
-logging:
-  level: INFO
-  scraper_log: ~/explorer/mvp-info-scraper/logs/scraper.log
-  classifier_log: ~/explorer/mvp-info-scraper/logs/classifier.log
-  synthesizer_log: ~/explorer/mvp-info-scraper/logs/synthesizer.log
-  max_log_size_mb: 10
-  backup_count: 5
+  output: ~/info/interested-raw-posts
+  buffer: buffer
+  seen_urls: seen_urls.txt
+  preferences: preferences.md
