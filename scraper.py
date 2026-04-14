@@ -81,7 +81,12 @@ async def main() -> None:
 
     print(f"[scraper] Starting scrape for {today} (dry_run={DRY_RUN})")
 
-    twitter_api = await setup_twitter_api(settings.twitter_username, settings.twitter_password)
+    twitter_api = await setup_twitter_api(
+        settings.twitter_username,
+        settings.twitter_password,
+        settings.twitter_email,
+        settings.twitter_email_password,
+    )
 
     total = 0
     for topic, topic_cfg in settings.config["topics"].items():
