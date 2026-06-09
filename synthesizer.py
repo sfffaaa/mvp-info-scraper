@@ -357,14 +357,16 @@ def main() -> None:
 
     report = deduplicate_action_items(report)
 
+    if DRY_RUN:
+        # True dry-run: no disk write, no email, no manifest mutation.
+        print(f"[dry-run] Would save {today}-synthesis.md, send email, mark {len(articles)} articles.")
+        print("[dry-run] Report preview:")
+        print(report[:500])
+        return
+
     report_path = synthesis_dir / f"{today}-synthesis.md"
     report_path.write_text(f"# Synthesis Report -- {today}\n\n{report}", encoding="utf-8")
     print(f"[synthesizer] Report saved to {report_path}")
-
-    if DRY_RUN:
-        print("[dry-run] Would send email. Report preview:")
-        print(report[:500])
-        return
 
     html = format_synthesis_email(report, len(articles), today)
     try:
