@@ -51,6 +51,8 @@ def bootstrap(output_dir: Path):
     """manifest = all dated articles MINUS gap articles."""
     syn = output_dir / "synthesis"
     all_rels = all_dated_articles(output_dir)
+    if not all_rels:
+        return [], [], []
     dates = sorted({
         datetime.strptime(r.split("/")[-1][:10], "%Y-%m-%d").date() for r in all_rels
     })

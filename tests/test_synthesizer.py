@@ -109,3 +109,18 @@ def test_dryrun_report_still_has_four_sections(monkeypatch):
         [{"title": "t", "topic": "crypto", "date": "2026-06-01", "content": "c", "rel": "crypto/x.md"}],
         "prefs", "")
     assert all(s in rep for s in synthesizer.REQUIRED_SECTIONS)
+
+
+def test_chunk_failure_raises_not_silent_skip(monkeypatch):
+    """Invariant: a failed chunk must raise so main() won't mark articles synthesized."""
+    import synthesizer
+
+    def boom(chunk):
+        raise RuntimeError("claude timeout")
+
+    monkeypatch.setattr(synthesizer, "_summarize_chunk", boom)
+    arts = [{"title": "t", "topic": "crypto", "date": "2026-06-01",
+             "content": "c", "rel": f"crypto/{i}.md"} for i in range(3)]
+    import pytest
+    with pytest.raises(RuntimeError):
+        synthesizer.synthesize_with_claude(arts, "prefs", "")

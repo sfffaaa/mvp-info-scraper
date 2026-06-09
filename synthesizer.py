@@ -261,13 +261,13 @@ def synthesize_with_claude(articles: list[dict], preferences_text: str, previous
     summaries: list[str] = []
     for idx, chunk in enumerate(chunks, 1):
         print(f"[synthesizer] Summarizing chunk {idx}/{len(chunks)} ({len(chunk)} articles)...")
-        try:
-            summaries.append(_summarize_chunk(chunk))
-        except RuntimeError as e:
-            print(f"[synthesizer] WARNING: chunk {idx} failed ({e}), skipping.", file=sys.stderr)
+        # Invariant: a chunk failure must fail the whole run so main() does NOT
+        # mark these articles synthesized — they get retried next run (manifest-based).
+        # Silently skipping would mark unsynthesized articles as done → archived without synthesis.
+        summaries.append(_summarize_chunk(chunk))
 
     if not summaries:
-        raise RuntimeError("All chunks failed — no summaries to synthesize from")
+        raise RuntimeError("No summaries to synthesize from")
 
     combined = "\n\n".join(summaries)
     prev_section = (
@@ -328,8 +328,6 @@ def get_since_date(days_back: int) -> str:
 
 def main() -> None:
     settings = Settings.load(CONFIG_PATH, ENV_PATH)
-    days_back = settings.config["schedule"]["synthesize_every_days"]
-    since_date = get_since_date(days_back)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     output_dir = settings.output_dir
     preferences_text = (Path(__file__).parent / settings.preferences_path).read_text()
