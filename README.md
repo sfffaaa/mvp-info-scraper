@@ -7,8 +7,14 @@ Automated article scraper for `~/info/interested-raw-posts/`. Collects articles 
 ```
 07:00 + 19:00  scraper.py   → buffer/ (raw articles from X, HN, Medium, Reddit)
 21:00          classifier.py → Claude scores buffer → saves top 3-5/topic as .md
-every 2 days   synthesizer.py → Claude synthesizes → email to sfffaaa@gmail.com
+every 2 days   synthesizer.py → Claude synthesizes → email + record in manifest
+Monday 08:00   archiver.py   → move synthesized + >14d articles into <topic>/archive/
 ```
+
+Invariant: an article is only moved to `archive/` after it has been synthesized,
+and it is only marked synthesized after the digest email is delivered
+(`archived ⟹ synthesized ⟹ delivered`). A failed email leaves nothing on disk
+and nothing in the manifest, so the whole run retries cleanly next time.
 
 ## Setup
 
@@ -40,7 +46,9 @@ Paste any article content to Claude. Claude saves it directly and updates `prefe
 ```bash
 python3 scraper.py --dry-run     # test scrape without writing
 python3 classifier.py --dry-run  # test classify without saving
-python3 synthesizer.py --dry-run # test synthesis without emailing
+python3 synthesizer.py --dry-run # test synthesis without emailing (no disk/email/manifest writes)
+python3 archiver.py --dry-run    # list what would be archived, move nothing
+python3 backlog_archive.py       # one-time bootstrap: mark already-digested articles synthesized (add --write to commit)
 python3 -m pytest tests/ -v      # run all tests
 ```
 
@@ -51,11 +59,16 @@ python3 -m pytest tests/ -v      # run all tests
 0  19 * * *   cd /home/jaypan/explorer/mvp-info-scraper && PYTHONUNBUFFERED=1 python3 scraper.py >> logs/scraper.log 2>&1
 0  21 * * *   cd /home/jaypan/explorer/mvp-info-scraper && PYTHONUNBUFFERED=1 python3 classifier.py >> logs/classifier.log 2>&1
 0  9  */2 * * cd /home/jaypan/explorer/mvp-info-scraper && PYTHONUNBUFFERED=1 python3 synthesizer.py >> logs/synthesizer.log 2>&1
+0  8  * * 1   cd /home/jaypan/explorer/mvp-info-scraper && PYTHONUNBUFFERED=1 python3 archiver.py >> logs/archiver.log 2>&1
 ```
 
 ## Dev Notes
 
 - Buffer: `buffer/<YYYY-MM-DD>/<topic>/*.json`
 - Output: `~/info/interested-raw-posts/<topic>/<date>-<slug>.md`
-- Logs: `logs/scraper.log`, `logs/classifier.log`, `logs/synthesizer.log`
+- Logs: `logs/scraper.log`, `logs/classifier.log`, `logs/synthesizer.log`, `logs/archiver.log`
 - Dedup: `seen_urls.txt`
+- Synthesis manifest: `~/info/interested-raw-posts/synthesized.txt` (append-only list of
+  synthesized article rel-paths; the gate the archiver checks before moving anything)
+- Archived articles: `~/info/interested-raw-posts/<topic>/archive/<date>-<slug>.md`
+  (kept, not deleted; excluded from re-synthesis and re-archival)
