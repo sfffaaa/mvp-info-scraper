@@ -6,7 +6,6 @@ from datetime import date, datetime, timedelta
 
 import manifest as manifest_mod
 
-DATE_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-")
 SYN_RE = re.compile(r"^(\d{4}-\d{2}-\d{2})-synthesis\.md$")
 
 
@@ -29,22 +28,13 @@ def uncovered_dates(synthesis_dir: Path, lookback: int, start: date, end: date) 
 
 
 def all_dated_articles(output_dir: Path) -> list[str]:
-    res = []
-    for topic_dir in output_dir.iterdir():
-        if not topic_dir.is_dir() or topic_dir.name in ("synthesis",):
-            continue
-        for md in topic_dir.glob("*.md"):
-            if md.name.startswith("SYNTHESIS-"):
-                continue
-            if not DATE_RE.match(md.name):
-                continue
-            res.append(manifest_mod.rel_path(md, output_dir))
-    return res
+    return [manifest_mod.rel_path(md, output_dir)
+            for md in manifest_mod.iter_dated_articles(output_dir)]
 
 
-def gap_article_rels(output_dir: Path, gaps: set) -> set:
+def gap_article_rels(all_rels: list[str], gaps: set) -> set:
     gapstr = {g.strftime("%Y-%m-%d") for g in gaps}
-    return {r for r in all_dated_articles(output_dir) if r.split("/")[-1][:10] in gapstr}
+    return {r for r in all_rels if r.split("/")[-1][:10] in gapstr}
 
 
 def bootstrap(output_dir: Path):
@@ -57,7 +47,7 @@ def bootstrap(output_dir: Path):
         datetime.strptime(r.split("/")[-1][:10], "%Y-%m-%d").date() for r in all_rels
     })
     gaps = uncovered_dates(syn, lookback=2, start=dates[0], end=dates[-1])
-    gap_rels = gap_article_rels(output_dir, gaps)
+    gap_rels = gap_article_rels(all_rels, gaps)
     keep = [r for r in all_rels if r not in gap_rels]
     return keep, sorted(gap_rels), sorted(gaps)
 
@@ -71,7 +61,7 @@ def main():
     print(f"[backlog] gap dates ({len(gaps)}): {[g.isoformat() for g in gaps]}")
     print(f"[backlog] gap articles to deep-synthesize: {len(gap_rels)}")
     if "--write" in sys.argv:
-        manifest_mod.append(out / "synthesized.txt", keep)
+        manifest_mod.append(manifest_mod.default_path(out), keep)
         print(f"[backlog] bootstrapped manifest with {len(keep)} articles (gaps excluded)")
     else:
         print("[backlog] dry-run. add --write to bootstrap manifest")

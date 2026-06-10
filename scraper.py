@@ -6,8 +6,11 @@ Run twice daily (07:00 and 19:00 via cron).
 import asyncio
 import hashlib
 import json
+import socket
 import sys
 from datetime import datetime, timezone
+
+socket.setdefaulttimeout(30)  # prevent feedparser/urllib blocking indefinitely
 from pathlib import Path
 
 from config import Settings

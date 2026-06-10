@@ -7,7 +7,7 @@ import json
 import re
 import subprocess
 import sys
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from pathlib import Path
 
 from config import Settings
@@ -20,55 +20,25 @@ DRY_RUN = "--dry-run" in sys.argv
 
 import manifest as manifest_mod
 
-DATE_PREFIX_RE = re.compile(r"^\d{4}-\d{2}-\d{2}-")
-
 
 def load_unsynthesized_articles(output_dir: Path, manifest_path: Path) -> list[dict]:
-    """Collect all dated .md not yet in manifest. Non-recursive glob skips archive/."""
+    """Collect dated articles not yet in manifest (shared walker skips synthesis/archive/no-date)."""
     done = manifest_mod.load(manifest_path)
     articles = []
-    for topic_dir in output_dir.iterdir():
-        if not topic_dir.is_dir() or topic_dir.name in ("synthesis",):
+    for md_file in manifest_mod.iter_dated_articles(output_dir):
+        rel = manifest_mod.rel_path(md_file, output_dir)
+        if rel in done:
             continue
-        for md_file in topic_dir.glob("*.md"):
-            name = md_file.name
-            if name.startswith("SYNTHESIS-"):
-                continue
-            if not DATE_PREFIX_RE.match(name):
-                continue
-            rel = manifest_mod.rel_path(md_file, output_dir)
-            if rel in done:
-                continue
-            text = md_file.read_text(encoding="utf-8")
-            title = text.split("\n")[0].lstrip("# ").strip()
-            articles.append({
-                "title": title,
-                "topic": topic_dir.name,
-                "date": name[:10],
-                "content": text[:1500],
-                "path": str(md_file),
-                "rel": rel,
-            })
-    return articles
-
-
-def load_recent_articles(output_dir: Path, since_date: str) -> list[dict]:
-    articles = []
-    for topic_dir in output_dir.iterdir():
-        if not topic_dir.is_dir() or topic_dir.name == "synthesis":
-            continue
-        for md_file in topic_dir.glob("*.md"):
-            file_date = md_file.name[:10]
-            if file_date >= since_date:
-                text = md_file.read_text(encoding="utf-8")
-                title = text.split("\n")[0].lstrip("# ").strip()
-                articles.append({
-                    "title": title,
-                    "topic": topic_dir.name,
-                    "date": file_date,
-                    "content": text[:1500],
-                    "path": str(md_file),
-                })
+        text = md_file.read_text(encoding="utf-8")
+        title = text.split("\n")[0].lstrip("# ").strip()
+        articles.append({
+            "title": title,
+            "topic": md_file.parent.name,
+            "date": md_file.name[:10],
+            "content": text[:1500],
+            "path": str(md_file),
+            "rel": rel,
+        })
     return articles
 
 
@@ -321,11 +291,6 @@ def synthesize_with_claude(articles: list[dict], preferences_text: str, previous
     return report
 
 
-def get_since_date(days_back: int) -> str:
-    since = datetime.now(timezone.utc) - timedelta(days=days_back)
-    return since.strftime("%Y-%m-%d")
-
-
 def main() -> None:
     settings = Settings.load(CONFIG_PATH, ENV_PATH)
     today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
@@ -335,7 +300,7 @@ def main() -> None:
     synthesis_dir = output_dir / "synthesis"
     synthesis_dir.mkdir(exist_ok=True)
 
-    manifest_path = output_dir / "synthesized.txt"
+    manifest_path = manifest_mod.default_path(output_dir)
     print(f"[synthesizer] Loading unsynthesized articles (manifest-based)...")
     articles = load_unsynthesized_articles(output_dir, manifest_path)
 
