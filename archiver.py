@@ -24,6 +24,9 @@ def run(output_dir: Path, manifest_path: Path, today: date,
             continue
         dest = md_file.parent / "archive" / md_file.name
         dest.parent.mkdir(parents=True, exist_ok=True)
+        if dest.exists():  # no-clobber: never overwrite an already-archived copy
+            print(f"[archiver] skip (archive exists): {rel}", file=sys.stderr)
+            continue
         shutil.move(str(md_file), str(dest))
         moved.append(rel)
     return moved

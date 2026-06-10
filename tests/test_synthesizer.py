@@ -74,3 +74,33 @@ def test_chunk_failure_raises_not_silent_skip(monkeypatch):
     import pytest
     with pytest.raises(RuntimeError):
         synthesizer.synthesize_with_claude(arts, "prefs", "")
+
+
+def test_email_failure_publishes_nothing(tmp_path, monkeypatch):
+    """Invariant: a failed email leaves NO synthesis file and NO manifest entry,
+    so the next run retries cleanly (and load_previous_synthesis can't suppress
+    the undelivered content)."""
+    import synthesizer
+    out = tmp_path / "posts"
+    _mk_art(out, "crypto/2026-06-01-a.md")
+
+    class FakeSettings:
+        output_dir = out
+        preferences_path = "config.yaml"  # any real file under the module dir
+        config = {"email": {"to": "x@y.z"}}
+
+    monkeypatch.setattr(synthesizer.Settings, "load",
+                        classmethod(lambda cls, *a, **k: FakeSettings()))
+    monkeypatch.setattr(synthesizer, "synthesize_with_claude",
+                        lambda *a, **k: "## 主要主題\nx\n## 重要洞見\ny\n## 可行動項目\nz\n## 值得關注的信號\nw")
+    monkeypatch.setattr(synthesizer, "deduplicate_action_items", lambda r: r)
+    def boom(*a, **k):
+        raise RuntimeError("smtp down")
+    monkeypatch.setattr(synthesizer, "send_email", boom)
+    monkeypatch.setattr(synthesizer, "send_failure_email", lambda *a, **k: None)
+    monkeypatch.setattr(synthesizer, "DRY_RUN", False)
+
+    synthesizer.main()
+
+    assert list((out / "synthesis").glob("*-synthesis.md")) == []
+    assert _manifest.load(out / "synthesized.txt") == set()

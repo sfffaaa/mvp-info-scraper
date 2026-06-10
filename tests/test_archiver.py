@@ -25,6 +25,19 @@ def test_moves_only_manifested_and_old(tmp_path):
     assert (out / "crypto/2026-06-08-new-done.md").exists()
 
 
+def test_no_clobber_keeps_existing_archive(tmp_path):
+    """A same-named new article must not silently overwrite an archived copy."""
+    out = tmp_path / "posts"
+    archived = _mk(out, "crypto/archive/2026-01-01-a.md", body="OLD ARCHIVED")
+    new = _mk(out, "crypto/2026-01-01-a.md", body="NEW")
+    m = out / "synthesized.txt"
+    manifest.append(m, ["crypto/2026-01-01-a.md"])
+    moved = archiver.run(out, m, today=date(2026, 6, 1), keep_days=14)
+    assert moved == []  # collision -> not moved
+    assert archived.read_text() == "OLD ARCHIVED"  # archive untouched
+    assert new.read_text() == "NEW"  # root file left in place
+
+
 def test_excludes_synthesis_and_nodate_and_baddate(tmp_path):
     out = tmp_path / "posts"
     _mk(out, "crypto/SYNTHESIS-archive-pre-2026-05-24.md")

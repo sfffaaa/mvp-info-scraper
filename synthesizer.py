@@ -329,21 +329,25 @@ def main() -> None:
         print(report[:500])
         return
 
-    report_path = synthesis_dir / f"{today}-synthesis.md"
-    report_path.write_text(f"# Synthesis Report -- {today}\n\n{report}", encoding="utf-8")
-    print(f"[synthesizer] Report saved to {report_path}")
-
     html = format_synthesis_email(report, len(articles), today)
     try:
         send_email(f"📰 資訊摘要 — {today}", html, settings)
         print(f"[synthesizer] Email sent to {settings.config['email']['to']}")
     except Exception as e:
-        error_msg = f"Email send failed: {e}\nReport saved at {report_path}"
+        error_msg = f"Email send failed: {e}"
         print(f"[synthesizer] ERROR: {error_msg}", file=sys.stderr)
         send_failure_email("synthesizer/email", error_msg, settings)
         return
 
-    # Mark these articles synthesized only after successful report + email.
+    # Nothing is published until the email is delivered: write the report file
+    # and append the manifest only after send_email succeeds. A failed email
+    # therefore leaves no synthesis file (which load_previous_synthesis would
+    # otherwise treat as delivered prior context) and no manifest entry, so the
+    # whole run retries cleanly next time.
+    report_path = synthesis_dir / f"{today}-synthesis.md"
+    report_path.write_text(f"# Synthesis Report -- {today}\n\n{report}", encoding="utf-8")
+    print(f"[synthesizer] Report saved to {report_path}")
+
     manifest_mod.append(manifest_path, [a["rel"] for a in articles])
     print(f"[synthesizer] Marked {len(articles)} articles as synthesized.")
 
